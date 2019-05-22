@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.0/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+        <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.0/js/bootstrap.min.js"></script>
+        <script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
+        <!------ Include the above in your HEAD tag ---------->
+        <link rel="manifest" href="./manifest.json">
+    </head>
+    <body>
+        <div class="container">    
+            <div id="loginbox" style="margin-top:50px;" class="mainbox col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2">                    
+                <div class="panel panel-info" >
+                    <div class="panel-heading">
+                        <div class="panel-title">BlinkInteract</div>
+                    </div>     
+                    <div style="padding-top:30px" class="panel-body" >
+                        <form id="loginform" class="form-horizontal" role="form">
+                            <div style="margin-bottom: 25px" class="input-group">
+                                <span class="input-group-addon"><i class="glyphicon glyphicon-user"></i></span>
+                                <input id="phoneNumber" type="text" class="form-control" name="phoneNumber" value="" placeholder="Please enter phone number">                                      
+                            </div>
+                            <div style="margin-top:10px" class="form-group">
+                                <!-- Button -->
+                                <div class="col-sm-12 controls">
+                                    <a href="#" id="btn-login" class="btn btn-success" onClick="fetchUserInfo();">Login  </a>
+                                </div>
+                            </div>
+                        </form>     
+                    </div>                     
+                </div>  
+            </div>
+            <div id="signupbox" style="display:none; margin-top:50px" class="mainbox col-md-6 col-md-offset-3 col-sm-8 col-sm-offset-2">
+                <div class="panel panel-info">
+                    <div class="panel-heading">
+                        <div class="panel-title">Sign Up</div>
+                    </div>  
+                    <div class="panel-body" >
+                        <form id="signupform" class="form-horizontal" role="form">
+                            <div class="form-group">
+                                <label for="firstname" class="col-md-3 control-label">First Name</label>
+                                <div class="col-md-9">
+                                    <input type="text" class="form-control" name="firstname" id="firstname" placeholder="First Name">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="lastname" class="col-md-3 control-label">Last Name</label>
+                                <div class="col-md-9">
+                                    <input type="text" class="form-control" name="lastname" id="lastname" placeholder="Last Name">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="email" class="col-md-3 control-label">Email</label>
+                                <div class="col-md-9">
+                                    <input type="text" class="form-control" name="email" id="email" placeholder="Email Address">
+                                </div>
+                            </div>
+                            <!-- push notification-->
+                            <div>
+                                <div class="fab fab__push" style="background: #f00;width: 25px;float: right;">
+                                    <div class="fab__ripple"></div>
+                                    <img class="fab__image" src="./images/push-off.png" alt="Push Notification"/>
+                                </div>
+
+                                <!-- Toast msg's  -->
+                                <div class="toast__container"></div>
+                            </div>
+                            <div class="form-group">
+                                <!-- Button -->                                        
+                                <div class="col-md-offset-3 col-md-9">
+                                    <button id="btn-signup" type="button" class="btn btn-info"><i class="icon-hand-right"></i> &nbsp; Sign Up</button>
+
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div> 
+        </div>
+        <script type="text/javascript">
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('./sw.js')
+                        .then(res => {
+                            console.info('sw registered');
+                        })
+                        .catch(err => {
+                            console.error('sw register error', err);
+                        })
+            } else {
+                console.log('sw not supported');
+            }
+
+            function fetchUserInfo() {
+                var phoneNumber = $("#phoneNumber").val();
+
+                var http = new XMLHttpRequest();
+                var url = 'https://blink-interact.com/truecaller/caller/index';
+                var params = 'phoneNumber=' + phoneNumber;
+                http.open('POST', url, true);
+
+                //Send the proper header information along with the request
+                http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+                http.send(params);
+                checkAccessToken();
+
+            }
+
+            function checkAccessToken() {
+                var phoneNumber = $("#phoneNumber").val();
+
+                //check for user response and receive information
+                var http = new XMLHttpRequest();
+                var url = 'https://blink-interact.com/truecaller/caller/check_access_token';
+                var params = 'phoneNumber=' + phoneNumber;
+                http.open('POST', url, true);
+
+                //Send the proper header information along with the request
+                http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+
+                setTimeout(function () {
+                    http.send(params);
+                }, 3000);
+
+                //check for user response and receive information
+                http.onreadystatechange = function () {//Call a function when the state changes.
+                    if (http.status === 200) {
+                        userInfo();
+
+                    } else if (http.status === 400) {
+                        setTimeout(function () {
+                            checkAccessToken();
+                        }, 3000);
+                    }
+                }
+            }
+
+            function userInfo() {
+                var phoneNumber = $("#phoneNumber").val();
+                var http = new XMLHttpRequest();
+                var url = 'https://blink-interact.com/truecaller/caller/information';
+                var params = 'phoneNumber=' + phoneNumber;
+                http.open('POST', url, true);
+                http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+                http.send(params);
+                http.onreadystatechange = function () {
+                    if (http.status === 200) {
+                        var data = JSON.parse(http.responseText);
+                        $("#firstname").val(data.user.FirstName);
+                        $("#lastname").val(data.user.LastName);
+                        $("#email").val(data.user.Email);
+                        $('#loginbox').hide();
+                        $('#signupbox').show();
+
+                        //fetch user location
+                        getLocation();
+                    }
+                }
+            }
+
+            function getLocation() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(showPosition);
+                } else {
+                    console.log("Geo Location not supported by browser");
+                }
+            }
+            //function that retrieves the position
+            function showPosition(position) {
+                var phoneNumber = $("#phoneNumber").val();
+                var location = {
+                    longitude: position.coords.longitude,
+                    latitude: position.coords.latitude
+                }
+                console.log(location);
+
+                var http = new XMLHttpRequest();
+                var url = 'https://blink-interact.com/truecaller/caller/insert_location';
+                var params = 'longitude=' + position.coords.longitude + '&latitude=' + position.coords.latitude + '&phoneNumber=' + phoneNumber;
+                http.open('POST', url, true);
+
+                //Send the proper header information along with the request
+                http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+
+                http.onreadystatechange = function () {//Call a function when the state changes.
+                    if (http.status == 200) {
+                        //alert(http.responseText);
+                    }
+                }
+                http.send(params);
+            }
+            //request for location
+
+
+
+        </script>
+        <script src="./js/app.js"></script>
+        <script src="./js/notification.js"></script>
+        <script src="./js/toast.js"></script>
+        <script src="./js/offline.js"></script>
+    </body>
+</html>
